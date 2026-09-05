@@ -47,7 +47,7 @@ if len(sys.argv) > 1 and sys.argv[1] == "tamper":
     exit(0 if not result else 1)
 
 
-IMAGE_PATH = "data/input/test_search.jpg"
+IMAGE_PATH = "data/input/public_test.jpg"
 
 
 print("=" * 50)
