@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Environment variables / secrets
+.env
+
+# Generated search and verification data
+data/results/
+
+# Compressed temporary images
+data/input/compressed_search.jpg
+
+# macOS
+.DS_Store
