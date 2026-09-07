@@ -1,0 +1,104 @@
+/* Custom styles and enhancements */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #080c14;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.06) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Tab Switching */
+.active-tab {
+  background-color: rgba(6, 182, 212, 0.12);
+  color: #22d3ee !important;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+/* Step Card States */
+.step-card {
+  transition: all 0.25s ease-in-out;
+}
+
+.step-card.step-running {
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.step-card.step-running .step-icon {
+  background: #06b6d4;
+  color: #000;
+  animation: pulse-ring 1.5s infinite;
+}
+
+.step-card.step-running .step-badge {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.step-card.step-success {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.step-card.step-success .step-icon {
+  background: #10b981;
+  color: #000;
+}
+
+.step-card.step-success .step-badge {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.step-card.step-error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.step-card.step-error .step-icon {
+  background: #ef4444;
+  color: #fff;
+}
+
+.step-card.step-error .step-badge {
+  color: #f87171;
+  font-weight: 600;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(6, 182, 212, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
+  }
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}

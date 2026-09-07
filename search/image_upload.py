@@ -1,6 +1,5 @@
 import os
 import requests
-from PIL import Image
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,6 +27,7 @@ def compress_image(image_path):
     compressed_path = "data/input/compressed_search.jpg"
 
     try:
+        from PIL import Image
         image = Image.open(image_path)
         image = image.convert("RGB")
 

@@ -13,6 +13,7 @@ data/results/
 
 # Compressed temporary images
 data/input/compressed_search.jpg
+data/input/current_input.jpg
 
 # macOS
 .DS_Store

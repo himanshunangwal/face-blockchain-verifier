@@ -1,14 +1,9 @@
 import os
 import sys
 
-from blockchain.blockchain import register_hash, verify_hash
-from face.detector import detect_face
-from face.encoder import encode_face
-from search.image_upload import upload_image
-from search.google_lens import search_google_lens
-from search.result_parser import parse_results
-from utils.hashing import generate_hash
-from utils.json_utils import save_json, create_verification_record
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from utils.tamper_checker import check_tampering
 
 if len(sys.argv) > 1 and sys.argv[1] == "verify":
@@ -46,6 +41,13 @@ if len(sys.argv) > 1 and sys.argv[1] == "tamper":
 
     exit(0 if not result else 1)
 
+from blockchain.blockchain import register_hash, verify_hash
+from search.image_upload import upload_image
+from search.google_lens import search_google_lens
+from search.result_parser import parse_results
+from utils.hashing import generate_hash
+from utils.json_utils import save_json, create_verification_record
+
 
 IMAGE_PATH = "data/input/public_test.jpg"
 
@@ -57,6 +59,9 @@ print("=" * 50)
 
 # 1. Face Detection
 print("\n[1] Detecting face...")
+
+from face.detector import detect_face
+from face.encoder import encode_face
 
 faces = detect_face(IMAGE_PATH)
 

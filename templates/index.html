@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face ID + Blockchain Verifier</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              900: '#164e63',
+            },
+            baseblue: '#0052FF',
+            darkbg: '#0B0F17',
+            cardbg: '#111827',
+            cardborder: '#1F2937',
+            codebg: '#080C14',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body class="bg-darkbg text-slate-200 min-h-screen font-sans antialiased selection:bg-cyan-500 selection:text-black">
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Header Navigation -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-cardborder">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20">
+          <i class="fa-solid fa-fingerprint text-2xl text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">Face ID + Blockchain Verifier</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">v1.0</span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400">Cryptographic evidence anchoring for facial reverse-image search on Base Sepolia</p>
+        </div>
+      </div>
+
+      <!-- Network & Mode Indicators -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Network Badge -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cardbg border border-cardborder text-xs">
+          <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+          <span class="font-medium text-slate-300">Base Sepolia</span>
+          <span class="text-slate-500 font-mono">(84532)</span>
+        </div>
+
+        <!-- Mode Indicator / Toggle -->
+        <div id="modePill" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cardbg border border-cardborder text-xs">
+          <i class="fa-solid fa-sliders text-cyan-400"></i>
+          <span class="text-slate-400">Mode:</span>
+          <select id="modeSelect" class="bg-transparent text-cyan-300 font-semibold focus:outline-none cursor-pointer">
+            <option value="auto" class="bg-gray-900 text-white">Auto (Live/Demo)</option>
+            <option value="demo" class="bg-gray-900 text-white">Demo / Simulation</option>
+            <option value="live" class="bg-gray-900 text-white">Live Only</option>
+          </select>
+        </div>
+
+        <!-- Quick Info / Status Button -->
+        <button id="btnOpenDiagnostics" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-server text-slate-400"></i>
+          <span>Environment</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-cardborder pb-2 overflow-x-auto">
+      <button class="nav-tab active-tab px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2" data-tab="pipeline">
+        <i class="fa-solid fa-play text-cyan-400"></i>
+        <span>Pipeline Execution</span>
+      </button>
+      <button class="nav-tab text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2" data-tab="tamper">
+        <i class="fa-solid fa-shield-halved text-amber-400"></i>
+        <span>Tamper Proof Demo</span>
+      </button>
+      <button class="nav-tab text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2" data-tab="audit">
+        <i class="fa-solid fa-magnifying-glass-chart text-indigo-400"></i>
+        <span>Record & Audit</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: PIPELINE EXECUTION -->
+    <section id="tab-pipeline" class="tab-content space-y-6">
+      
+      <!-- Top Grid: Input & Execution Control -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Image Selector Card (5 cols) -->
+        <div class="lg:col-span-5 bg-cardbg rounded-2xl border border-cardborder p-5 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+              <i class="fa-regular fa-image text-cyan-400"></i>
+              <span>1. Select Input Photo</span>
+            </h2>
+            <button id="btnUseSample" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate"></i>
+              <span>Use Sample Image</span>
+            </button>
+          </div>
+
+          <!-- Drag and Drop Dropzone -->
+          <div id="dropZone" class="relative group border-2 border-dashed border-slate-700 hover:border-cyan-500/60 rounded-xl p-4 transition-all flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] bg-slate-900/40">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/jpg" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10" />
+            
+            <div id="previewContainer" class="hidden flex flex-col items-center space-y-2 w-full">
+              <img id="imagePreview" src="/api/image/sample" alt="Face preview" class="max-h-48 max-w-full rounded-lg object-contain shadow-md border border-slate-700" />
+              <div class="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                <span id="imageFileName">public_test.jpg</span>
+                <span id="imageFileSize" class="text-slate-500"></span>
+              </div>
+            </div>
+
+            <div id="dropPlaceholder" class="flex flex-col items-center space-y-2 text-slate-400">
+              <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition">
+                <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+              </div>
+              <p class="text-sm font-medium text-slate-300">Drop an image here or click to browse</p>
+              <p class="text-xs text-slate-500">Supports JPG, PNG, WEBP (Face will be detected)</p>
+            </div>
+          </div>
+
+          <!-- Execution Action Button -->
+          <button id="btnRunPipeline" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-sm shadow-lg shadow-cyan-500/20 transition-all transform active:scale-[0.99] flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i>
+            <span>Run Verification Pipeline</span>
+          </button>
+        </div>
+
+        <!-- Right: Pipeline Stages Progress Tracker (7 cols) -->
+        <div class="lg:col-span-7 bg-cardbg rounded-2xl border border-cardborder p-5 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
+            <h2 class="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+              <i class="fa-solid fa-bars-progress text-cyan-400"></i>
+              <span>2. Execution Stepper</span>
+            </h2>
+            <span id="pipelineOverallStatus" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">
+              Ready
+            </span>
+          </div>
+
+          <!-- 8 Pipeline Steps List -->
+          <div class="space-y-2.5" id="stepsList">
+            <!-- Step 1 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-1">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">1</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">Face Detection</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Locates face coordinates with RetinaFace</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-2">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">2</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">Face Encoding</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Generates 512-D ArcFace facial embedding</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 3 & 4 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-3">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">3</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">SerpApi Upload & Image ID</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Optimizes image size and requests reverse search token</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-4">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">4</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">Google Lens Reverse Search</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Queries visual matches across public web indices</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-5">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">5</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">Parsing & Deduplication</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Filters titles, sources, and deduplicates URL links</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-6">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">6</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">SHA-256 Fingerprint Generation</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Deterministic canonical JSON hashing</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 7 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-7">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">7</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">Base Sepolia Registration</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Signs registerHash(bytes32) transaction to contract</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+
+            <!-- Step 8 -->
+            <div class="step-card flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 transition" id="step-8">
+              <div class="flex items-center gap-3">
+                <div class="step-icon w-8 h-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-mono font-bold">8</div>
+                <div>
+                  <div class="text-xs sm:text-sm font-medium text-slate-200">On-Chain Verification</div>
+                  <div class="text-[11px] text-slate-400 step-desc">Cryptographic audit: verifiedHashes(hash) == true</div>
+                </div>
+              </div>
+              <div class="step-badge text-xs font-mono text-slate-500">Idle</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom Card: Output & Evidence Results -->
+      <div id="resultsCard" class="hidden bg-cardbg rounded-2xl border border-cardborder p-6 space-y-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cardborder">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-award text-emerald-400"></i>
+              <span>Pipeline Proof Results</span>
+            </h3>
+            <p class="text-xs text-slate-400">Fingerprint is anchored on-chain and locally recorded</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="resultVerifiedBadge" class="px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs font-semibold flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i>
+              <span>VERIFIED ON-CHAIN</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Hash & Transaction Summary Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- SHA-256 Digest Box -->
+          <div class="p-4 rounded-xl bg-codebg border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-fingerprint text-cyan-400"></i>
+                SHA-256 Canonical Hash
+              </span>
+              <button class="copy-btn hover:text-cyan-300 transition text-slate-500" data-target="resultShaHash">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+            <div id="resultShaHash" class="font-mono text-xs text-cyan-300 break-all select-all font-semibold">
+              --
+            </div>
+          </div>
+
+          <!-- Base Sepolia Transaction Box -->
+          <div class="p-4 rounded-xl bg-codebg border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="font-medium flex items-center gap-1.5">
+                <i class="fa-brands fa-ethereum text-blue-400"></i>
+                Base Sepolia Transaction
+              </span>
+              <a id="basescanLink" href="#" target="_blank" class="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition">
+                <span>View on BaseScan</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              </a>
+            </div>
+            <div id="resultTxHash" class="font-mono text-xs text-slate-300 break-all select-all">
+              --
+            </div>
+          </div>
+        </div>
+
+        <!-- Embedding Stats Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
+            <div class="text-slate-500">Faces Detected</div>
+            <div id="metricFaces" class="font-bold text-white text-base mt-0.5">1</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
+            <div class="text-slate-500">ArcFace Embedding</div>
+            <div id="metricEmbedding" class="font-bold text-cyan-400 text-base mt-0.5">512-D</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
+            <div class="text-slate-500">Web Evidence Hits</div>
+            <div id="metricHits" class="font-bold text-white text-base mt-0.5">0</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
+            <div class="text-slate-500">Execution Mode</div>
+            <div id="metricMode" class="font-bold text-indigo-400 text-base mt-0.5 font-mono">Live</div>
+          </div>
+        </div>
+
+        <!-- Evidence Matches Table -->
+        <div class="space-y-3">
+          <h4 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-cyan-400"></i>
+            <span>Recorded Reverse-Search Evidence</span>
+            <span class="text-xs font-normal text-slate-500">(Fingerprinted into hash)</span>
+          </h4>
+          <div class="overflow-x-auto rounded-xl border border-slate-800 bg-codebg">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase tracking-wider font-mono border-b border-slate-800">
+                <tr>
+                  <th class="py-2.5 px-4">#</th>
+                  <th class="py-2.5 px-4">Title</th>
+                  <th class="py-2.5 px-4">Source</th>
+                  <th class="py-2.5 px-4">Link</th>
+                </tr>
+              </thead>
+              <tbody id="evidenceTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 2: TAMPER PROOF PLAYGROUND -->
+    <section id="tab-tamper" class="tab-content hidden space-y-6">
+      
+      <!-- Informational Callout -->
+      <div class="bg-gradient-to-r from-amber-950/40 via-cardbg to-slate-900 rounded-2xl border border-amber-900/40 p-6 space-y-3 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">The Core Cryptographic Moment</h3>
+            <p class="text-xs sm:text-sm text-slate-400">
+              "Can anyone silently rewrite the search evidence once anchored on Base Sepolia?"
+            </p>
+          </div>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Because the on-chain registry stores the exact SHA-256 hash of the canonical results, modifying even a single character in a title or URL causes the recomputed hash to diverge entirely. The verification pipeline instantly catches this tampering.
+        </p>
+      </div>
+
+      <!-- Tamper Action Controls & Status -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Button 1: Tamper -->
+        <button id="btnTamperData" class="p-4 rounded-xl bg-rose-950/40 hover:bg-rose-900/50 border border-rose-900/60 text-left transition space-y-2 group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-400">Demo Attack</span>
+            <i class="fa-solid fa-bug text-rose-400 group-hover:rotate-12 transition"></i>
+          </div>
+          <div class="font-bold text-white text-sm sm:text-base">1. Tamper Local Record</div>
+          <p class="text-xs text-slate-400">Corrupts first search title to "TAMPERED DATA" in verification_record.json</p>
+        </button>
+
+        <!-- Button 2: Re-verify -->
+        <button id="btnVerifyIntegrity" class="p-4 rounded-xl bg-cardbg hover:bg-slate-800 border border-cardborder text-left transition space-y-2 group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">Integrity Check</span>
+            <i class="fa-solid fa-shield-check text-cyan-400 group-hover:scale-110 transition"></i>
+          </div>
+          <div class="font-bold text-white text-sm sm:text-base">2. Check Integrity</div>
+          <p class="text-xs text-slate-400">Re-hashes current data and verifies against the Base Sepolia ledger</p>
+        </button>
+
+        <!-- Button 3: Restore -->
+        <button id="btnRestoreData" class="p-4 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-900/60 text-left transition space-y-2 group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">Rollback</span>
+            <i class="fa-solid fa-arrow-rotate-left text-emerald-400 group-hover:-rotate-45 transition"></i>
+          </div>
+          <div class="font-bold text-white text-sm sm:text-base">3. Restore Original Record</div>
+          <p class="text-xs text-slate-400">Restores clean pristine state from backup and re-verifies successfully</p>
+        </button>
+      </div>
+
+      <!-- Verification Status Result Banner -->
+      <div id="tamperStatusBanner" class="p-5 rounded-2xl border transition-all duration-300 flex items-center justify-between bg-slate-900/60 border-slate-800">
+        <div class="flex items-center gap-3">
+          <div id="tamperStatusIcon" class="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-shield"></i>
+          </div>
+          <div>
+            <div id="tamperStatusTitle" class="font-bold text-white text-sm sm:text-base">Awaiting Verification Check</div>
+            <div id="tamperStatusDesc" class="text-xs text-slate-400">Click a demonstration action above to test integrity</div>
+          </div>
+        </div>
+        <div id="tamperStatusPill" class="text-xs font-mono px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+          IDLE
+        </div>
+      </div>
+
+      <!-- Hash Divergence Comparison Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Expected / Anchored Hash -->
+        <div class="p-4 rounded-xl bg-codebg border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span class="font-medium text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-lock text-emerald-400"></i>
+              Original Hash (Registered On-Chain)
+            </span>
+          </div>
+          <div id="tamperOriginalHash" class="font-mono text-xs text-emerald-300 break-all select-all font-semibold">
+            --
+          </div>
+        </div>
+
+        <!-- Recalculated Hash -->
+        <div class="p-4 rounded-xl bg-codebg border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span id="tamperComputedHashLabel" class="font-medium text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-calculator"></i>
+              Current Computed Hash (From Local Data)
+            </span>
+          </div>
+          <div id="tamperComputedHash" class="font-mono text-xs text-slate-300 break-all select-all font-semibold">
+            --
+          </div>
+        </div>
+      </div>
+
+      <!-- Tampered Content Visual Diff -->
+      <div id="tamperDiffContainer" class="hidden p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+        <h4 class="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i class="fa-solid fa-code-compare text-amber-400"></i>
+          Record Content Diff
+        </h4>
+        <div class="space-y-1.5 text-xs font-mono">
+          <div class="p-2 rounded bg-rose-950/30 border border-rose-900/40 text-rose-300 flex items-center gap-2">
+            <span class="text-rose-500 font-bold">-</span>
+            <span id="diffOriginal">Original: ...</span>
+          </div>
+          <div class="p-2 rounded bg-emerald-950/30 border border-emerald-900/40 text-emerald-300 flex items-center gap-2">
+            <span class="text-emerald-500 font-bold">+</span>
+            <span id="diffTampered">Tampered: ⚠️ TAMPERED DATA</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- TAB 3: RECORD & AUDIT -->
+    <section id="tab-audit" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Standalone Hash Query (5 cols) -->
+        <div class="lg:col-span-5 bg-cardbg rounded-2xl border border-cardborder p-5 space-y-4 shadow-xl">
+          <div>
+            <h3 class="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+              <i class="fa-solid fa-satellite-dish text-cyan-400"></i>
+              <span>Direct Blockchain Lookup</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Query the VerificationRegistry smart contract directly for any SHA-256 fingerprint.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs text-slate-300 font-medium">SHA-256 Hash to Query (64 hex characters):</label>
+            <input type="text" id="queryHashInput" placeholder="e.g. 5c60df17570af8396e1140ef558d921c1f39b679b..." class="w-full px-3 py-2.5 rounded-xl bg-codebg border border-slate-700 text-cyan-300 font-mono text-xs focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <button id="btnQueryHash" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-search"></i>
+            <span>Query verifiedHashes(bytes32)</span>
+          </button>
+
+          <!-- Hash Query Result Box -->
+          <div id="hashQueryResult" class="hidden p-3 rounded-xl border text-xs font-mono space-y-1">
+            <div id="hashQueryTitle" class="font-bold text-white"></div>
+            <div id="hashQueryDetail" class="text-slate-400 text-[11px] break-all"></div>
+          </div>
+        </div>
+
+        <!-- Right: Raw Verification Record JSON (7 cols) -->
+        <div class="lg:col-span-7 bg-cardbg rounded-2xl border border-cardborder p-5 space-y-4 shadow-xl">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-white flex items-center gap-2 text-sm sm:text-base">
+                <i class="fa-regular fa-file-code text-indigo-400"></i>
+                <span>verification_record.json</span>
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">Active local record on disk</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnReloadRecord" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition" title="Reload from disk">
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button>
+              <button class="copy-btn p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition" data-target="jsonViewer" title="Copy JSON">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+
+          <pre id="jsonViewer" class="p-4 rounded-xl bg-codebg border border-slate-800 text-[11px] text-cyan-300/90 font-mono overflow-auto max-h-[380px] select-all leading-relaxed">// Loading verification record...</pre>
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- Diagnostics & Environment Modal -->
+  <div id="diagnosticsModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-cardbg rounded-2xl border border-cardborder max-w-lg w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-cardborder pb-4">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <i class="fa-solid fa-server text-cyan-400"></i>
+          <span>Environment & Diagnostics</span>
+        </h3>
+        <button id="btnCloseDiagnostics" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <!-- SerpApi -->
+        <div class="p-3 rounded-xl bg-codebg border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-slate-200">SERPAPI_API_KEY</div>
+              <div class="text-[11px] text-slate-500">Google Lens reverse search engine</div>
+            </div>
+            <span id="diagSerpApi" class="font-mono font-bold px-2 py-0.5 rounded text-[11px]">Checking...</span>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <input type="password" id="inputSerpApiKey" placeholder="Paste SerpApi API key here..." class="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-xs focus:outline-none focus:border-cyan-500" />
+            <button id="btnSaveSerpKey" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">Save</button>
+          </div>
+        </div>
+
+        <!-- RPC URL -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-codebg border border-slate-800">
+          <div>
+            <div class="font-medium text-slate-200">BASE_SEPOLIA_RPC_URL</div>
+            <div id="diagRpcUrl" class="text-[11px] text-slate-500 font-mono">https://sepolia.base.org</div>
+          </div>
+          <span id="diagRpcStatus" class="font-mono font-bold px-2 py-0.5 rounded text-[11px]">Checking...</span>
+        </div>
+
+        <!-- Smart Contract -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-codebg border border-slate-800">
+          <div>
+            <div class="font-medium text-slate-200">CONTRACT_ADDRESS</div>
+            <div id="diagContract" class="text-[11px] text-slate-500 font-mono">--</div>
+          </div>
+          <span id="diagContractStatus" class="font-mono font-bold px-2 py-0.5 rounded text-[11px]">Checking...</span>
+        </div>
+
+        <!-- Wallet Address & Balance -->
+        <div class="flex items-center justify-between p-3 rounded-xl bg-codebg border border-slate-800">
+          <div>
+            <div class="font-medium text-slate-200">WALLET / PRIVATE_KEY</div>
+            <div id="diagWallet" class="text-[11px] text-slate-500 font-mono">--</div>
+          </div>
+          <span id="diagWalletStatus" class="font-mono font-bold px-2 py-0.5 rounded text-[11px]">Checking...</span>
+        </div>
+      </div>
+
+      <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+        <div class="font-semibold text-slate-300">Note:</div>
+        <div>If API keys or testnet ETH are not configured in your <code class="text-cyan-400">.env</code> file, the application runs in <span class="text-cyan-300 font-medium">Demo/Simulation Mode</span> automatically so you can test the full verification pipeline and tamper detection.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
